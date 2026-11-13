@@ -15,8 +15,9 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --omit=dev || npm install --omit=dev
 
-COPY server.js ./
-COPY public ./public
+COPY . .
+
+RUN mkdir -p /app/public
 
 ENV NODE_ENV=production \
     PORT=10000 \

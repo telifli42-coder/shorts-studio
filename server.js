@@ -11,7 +11,9 @@ const PORT = Number(process.env.PORT) || 3000;
 const ROOT = __dirname;
 const DATA_DIR = path.join(ROOT, 'data');
 const JOBS_DIR = path.join(DATA_DIR, 'jobs');
-const PUBLIC_DIR = path.join(ROOT, 'public');
+const PUBLIC_DIR = fs.existsSync(path.join(ROOT, 'public', 'index.html'))
+  ? path.join(ROOT, 'public')
+  : ROOT;
 
 const MAX_CLIP_SECONDS = 180;
 const JOB_TTL_MS = Number(process.env.JOB_TTL_HOURS || 24) * 60 * 60 * 1000;
@@ -72,6 +74,26 @@ app.use((req, res, next) => {
 
 app.get('/giris', (req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, 'giris.html'));
+});
+
+const SENSITIVE_FILES = new Set([
+  'server.js', 'package.json', 'package-lock.json', 'Dockerfile',
+  '.dockerignore', '.gitignore', 'render.yaml', 'README.md',
+  'kurulum.bat', 'baslat.bat',
+]);
+
+app.use((req, res, next) => {
+  if (PUBLIC_DIR === ROOT) {
+    const base = path.basename(req.path.split('?')[0]);
+    if (
+      SENSITIVE_FILES.has(base) ||
+      req.path.includes('node_modules') ||
+      req.path.includes('/.')
+    ) {
+      return res.status(404).end();
+    }
+  }
+  next();
 });
 
 app.use(express.static(PUBLIC_DIR));
